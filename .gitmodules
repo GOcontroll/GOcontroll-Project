@@ -1,0 +1,3 @@
+[submodule "GOcontroll-CodeBase"]
+	path = GOcontroll-CodeBase
+	url = https://github.com/GOcontroll/GOcontroll-CodeBase.git
