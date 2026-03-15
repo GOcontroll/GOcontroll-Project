@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "$(pass-filled) Linux",
+            "type": "shell",
+            "command": "bash .vscode/set_target.sh linux",
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "shared" }
+        },
+        {
+            "label": "$(circle-large-outline) IoT",
+            "type": "shell",
+            "command": "bash .vscode/set_target.sh iot",
+            "problemMatcher": [],
+            "presentation": { "reveal": "silent", "panel": "shared" }
+        },
+        {
+            "label": "$(tools) Build",
+            "type": "shell",
+            "command": "bash .vscode/build.sh",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "$(cloud-upload) Upload",
+            "type": "shell",
+            "command": "bash .vscode/upload.sh",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "$(trash) Clean",
+            "type": "shell",
+            "command": "bash .vscode/clean.sh",
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        }
+    ]
+}
