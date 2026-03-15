@@ -20,6 +20,7 @@ BUILD    ?= build_iot
 # --- Targets -----------------------------------------------------------------
 TARGET_ELF  := $(BUILD)/app.elf
 TARGET_SREC := $(BUILD)/app.srec
+TARGET_BIN  := $(BUILD)/app.bin
 
 # --- CPU & FPU flags ---------------------------------------------------------
 CPU_FLAGS := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
@@ -110,11 +111,16 @@ ALL_OBJS   := $(C_OBJS) $(ASM_OBJS)
 # =============================================================================
 .PHONY: all clean
 
-all: $(TARGET_SREC)
+all: $(TARGET_SREC) $(TARGET_BIN)
 
 # Generate .srec from .elf
 $(TARGET_SREC): $(TARGET_ELF)
 	$(OBJCOPY) -O srec $< $@
+	@echo "Generated: $@"
+
+# Generate .bin from .elf
+$(TARGET_BIN): $(TARGET_ELF)
+	$(OBJCOPY) -O binary $< $@
 	@echo "Generated: $@"
 
 # Link
