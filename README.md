@@ -14,10 +14,13 @@ In the root of your repository, add the submodule for the first time.
 The new folder structure should look like:
 ```
 GOcontroll-Project/
+├── .vscode/                ← VS Code configuration (tasks, build, upload scripts)
 ├── GOcontroll-CodeBase/    ← submodule (with examples)
 ├── application/
 │   └── main.c              ← your application
-├── Makefile
+├── tools/                  ← host-side utilities (BLE upload script)
+├── Makefile                ← build rules for Moduline IV / Mini / Display
+├── Makefile_iot            ← build rules for Moduline IOT
 └── README.md
 ```
 
@@ -59,40 +62,64 @@ sudo apt update
 sudo apt install gcc-aarch64-linux-gnu gcc-arm-none-eabi make curl
 ```
 
-### Step 3 — Install VS Code extensions
-Install the following extensions in Visual Studio Code:
+For **Moduline IOT** BLE upload, install Python and the `bleak` BLE library on **Windows** (not WSL — Bluetooth runs on Windows):
+```
+pip install bleak
+```
+> Python for Windows can be downloaded from [python.org](https://www.python.org/downloads/).
+
+### Step 3 — Install local VS Code extensions
+Install the following extensions in VS Code on Windows. These are UI extensions that run locally:
 - **WSL** (Microsoft) — connects VS Code to your WSL environment
-- **C/C++** (Microsoft) — IntelliSense, syntax highlighting and code navigation
-- **Makefile Tools** (Microsoft) — target selector panel with build configurations
-- **Tasks** (actboy168) — shows build and upload buttons in the status bar
+- **Tasks** (actboy168) — shows target, build and upload buttons in the status bar
 
 ### Step 4 — Open your project in WSL
 In VS Code, open the Command Palette (`Ctrl+Shift+P`) and select:
 `WSL: Open Folder in WSL`
 
-Navigate to your project folder. VS Code will reopen and all tools will now run inside WSL.
+Navigate to your project folder. VS Code will reopen connected to WSL — you will see **WSL: Debian** (or your distro) in the bottom-left corner.
 
 > **Important:** VS Code always connects to the **default** WSL distribution. If you have multiple distributions installed, make sure the correct one is set as default. Check your current default:
 > `wsl --list --verbose`
 > The default is marked with a `*`. To change it:
 > `wsl --set-default <distro-name>`
 
-### Step 5 — Build
-Select your target in the **Makefile Tools panel** (left sidebar) under **Configuration**:
-- Moduline IV
-- Moduline Mini
-- Moduline Display
-- Moduline IOT
+### Step 5 — Install remote VS Code extensions
+With the project open in WSL, install the following extension **in the WSL remote context**. Go to the Extensions panel (`Ctrl+Shift+X`), search for the extension and click **Install in WSL**:
+- **C/C++** (Microsoft) — IntelliSense, syntax highlighting and code navigation
 
-Then click the **Build** button in the status bar at the bottom of VS Code. The build output is located at `build/app.elf`.
+This extension must run inside WSL to analyse your C code correctly. If you previously installed it locally only, you will see an **"Install in WSL: &lt;distro&gt;"** button next to it.
 
-### Step 6 — Deploy to controller
-When you are connected to your controller using Wi-Fi - AP or ethernet connectivity, you can upload the generated bianry directly to you controller. First, set your controller's IP address in:   `.vscode/settings.json`:
+After installing, reload the window when prompted (`Ctrl+Shift+P` → `Reload Window`).
+
+### Step 6 — Select a target and build
+The status bar at the bottom of VS Code shows four buttons:
+
+| Button | Action |
+|--------|--------|
+| **Linux** | Switch to Moduline IV / Mini / Display target |
+| **IoT** | Switch to Moduline IOT target |
+| **Build** | Compile the project for the selected target |
+| **Upload** | Deploy the binary to the controller |
+| **Clean** | Remove the build output directory of the selected target |
+
+Click **Linux** or **IoT** to select your target. This updates IntelliSense so only the relevant code is highlighted. Then click **Build**. The build output is located at `build/app.elf` (Linux) or `build_iot/app.srec` (IoT).
+
+### Step 7 — Deploy to controller
+
+**Moduline IV / Mini / Display — upload via Wi-Fi or Ethernet**
+
+Make sure you are connected to the controller via Wi-Fi AP or Ethernet. Set the controller IP address in `.vscode/settings.json`:
 ```json
 "gocontroll.controllerIP": "192.168.1.19"
 ```
+Click the **Upload** button in the status bar. The binary `build/app.elf` is uploaded to the controller via the `go-upload-server` on port `8001`.
 
-Click the **Upload** button in the status bar to upload `build/app.elf` to the controller. The upload uses the `go-upload-server` running on the controller at port `8001`.
+**Moduline IOT — upload via Bluetooth (BLE)**
+
+Make sure the Moduline IOT is powered on and advertising as `GOcontroll-IoT`. Click the **Upload** button in the status bar. The script automatically scans for the device, transfers `build_iot/app.srec` in chunks and triggers the STM32 flash procedure via the ESP32 bootloader.
+
+> The BLE upload runs on Windows (not WSL) because Bluetooth is a Windows resource. Python and `bleak` must be installed on Windows (see Step 2).
 
 ## Further reading
 For more information on starting and managing services on the controller, visit the GOcontroll knowledge base:
