@@ -16,10 +16,14 @@ CC ?= gcc
 CODEBASE := GOcontroll-CodeBase
 APP_DIR  := application
 EXAMPLES := $(CODEBASE)/examples
-BUILD    := build
+BUILD    ?= build
 
 # --- Target ------------------------------------------------------------------
-TARGET := $(BUILD)/app
+TARGET := $(BUILD)/app.elf
+
+# --- Upload ------------------------------------------------------------------
+IP   ?= 192.168.1.19
+PORT ?= 8001
 
 # --- Flags -------------------------------------------------------------------
 CFLAGS := -Wall -Wextra -DGOCONTROLL_LINUX -D_GNU_SOURCE
@@ -57,7 +61,7 @@ CODEBASE_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(CODEBASE_SRCS))
 APP_OBJ := $(BUILD)/$(APP_DIR)/main.o
 
 # =============================================================================
-.PHONY: all clean led_blink read_supply_voltages input_module_10ch input_module_10ch_selftest
+.PHONY: all clean upload led_blink read_supply_voltages input_module_10ch input_module_10ch_selftest
 
 all: $(TARGET)
 
@@ -87,6 +91,13 @@ input_module_10ch_selftest: $(CODEBASE_OBJS) $(BUILD)/$(EXAMPLES)/input_module_1
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+upload: $(TARGET)
+	curl --connect-timeout 2 -i -X POST \
+		-H "Content-Type: multipart/form-data" \
+		-F "elfFile=@$(TARGET)" \
+		http://$(IP):$(PORT)/upload
+	@echo "Uploaded: $(TARGET) to $(IP):$(PORT)"
 
 clean:
 	rm -rf $(BUILD)

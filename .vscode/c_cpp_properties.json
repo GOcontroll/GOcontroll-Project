@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/application",
+                "${workspaceFolder}/GOcontroll-CodeBase/code",
+                "${workspaceFolder}/GOcontroll-CodeBase/code/modules",
+                "${workspaceFolder}/GOcontroll-CodeBase/lib/IIO",
+                "${workspaceFolder}/GOcontroll-CodeBase/lib/JSON-C",
+                "${workspaceFolder}/GOcontroll-CodeBase/lib/OAES"
+            ],
+            "defines": [ "GOCONTROLL_LINUX", "_GNU_SOURCE", "DEBUG=0" ],
+            "compilerPath": "/usr/bin/aarch64-linux-gnu-gcc",
+            "cStandard": "gnu11",
+            "intelliSenseMode": "linux-gcc-arm64"
+        }
+    ],
+    "version": 4
+}

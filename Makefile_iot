@@ -1,0 +1,137 @@
+# =============================================================================
+# GOcontroll IoT Application Makefile (STM32H573 — ARM Cortex-M33)
+#
+# Usage:
+#   make -f Makefile_iot              Build the application
+#   make -f Makefile_iot DEBUG=1      Build with debug output enabled
+#   make -f Makefile_iot clean        Remove build directory
+# =============================================================================
+
+# --- Toolchain ---------------------------------------------------------------
+CC      := arm-none-eabi-gcc
+OBJCOPY := arm-none-eabi-objcopy
+
+# --- Directories -------------------------------------------------------------
+CODEBASE := GOcontroll-CodeBase
+APP_DIR  := application
+IOT      := $(CODEBASE)/code/iot
+BUILD    ?= build_iot
+
+# --- Targets -----------------------------------------------------------------
+TARGET_ELF  := $(BUILD)/app.elf
+TARGET_SREC := $(BUILD)/app.srec
+
+# --- CPU & FPU flags ---------------------------------------------------------
+CPU_FLAGS := -mcpu=cortex-m33 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
+
+# --- Compiler flags ----------------------------------------------------------
+CFLAGS := $(CPU_FLAGS)
+CFLAGS += -Wall -Wextra
+CFLAGS += -DGOCONTROLL_IOT -DSTM32H573xx -DUSE_HAL_DRIVER
+CFLAGS += -DDEBUG=$(if $(filter 1,$(DEBUG)),1,0)
+CFLAGS += -fdata-sections -ffunction-sections
+CFLAGS += -Os
+CFLAGS += -Wno-unused-parameter -Wno-sign-compare
+
+# --- Include paths -----------------------------------------------------------
+CFLAGS += -I$(APP_DIR)
+CFLAGS += -I$(CODEBASE)/code
+CFLAGS += -I$(CODEBASE)/code/modules
+CFLAGS += -I$(IOT)/Core/Inc
+CFLAGS += -I$(IOT)/Drivers/CMSIS/Include
+CFLAGS += -I$(IOT)/Drivers/CMSIS/Device/ST/STM32H5xx/Include
+CFLAGS += -I$(IOT)/Drivers/STM32H5xx_HAL_Driver/Inc
+CFLAGS += -I$(IOT)/Drivers/STM32H5xx_HAL_Driver/Inc/Legacy
+CFLAGS += -I$(IOT)/Drivers/segger/Inc
+CFLAGS += -I$(IOT)/Middlewares/Third_Party/FreeRTOS/Source/include
+CFLAGS += -I$(IOT)/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
+CFLAGS += -I$(IOT)/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM33_NTZ/non_secure
+
+# --- Linker flags ------------------------------------------------------------
+LDFLAGS := $(CPU_FLAGS)
+LDFLAGS += -T$(IOT)/STM32H573RITX_FLASH.ld
+LDFLAGS += --specs=nano.specs --specs=nosys.specs
+LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,-Map=$(BUILD)/app.map
+LDFLAGS += -lm
+
+# --- Application sources -----------------------------------------------------
+APP_SRCS := $(APP_DIR)/main.c
+
+# --- GOcontroll platform sources ---------------------------------------------
+PLATFORM_SRCS := \
+	$(CODEBASE)/code/GO_board.c \
+	$(CODEBASE)/code/GO_communication_can.c \
+	$(CODEBASE)/code/GO_communication_esp.c \
+	$(CODEBASE)/code/GO_communication_modules.c \
+	$(CODEBASE)/code/GO_controller_info.c \
+	$(CODEBASE)/code/GO_fault.c \
+	$(CODEBASE)/code/GO_memory.c \
+	$(CODEBASE)/code/print.c \
+	$(CODEBASE)/code/modules/GO_module_bridge.c \
+	$(CODEBASE)/code/modules/GO_module_input.c \
+	$(CODEBASE)/code/modules/GO_module_input_420ma.c \
+	$(CODEBASE)/code/modules/GO_module_output.c
+
+# --- STM32 core & peripheral init sources ------------------------------------
+CORE_SRCS := $(wildcard $(IOT)/Core/Src/*.c)
+
+# --- STM32 HAL driver sources (exclude template files) ----------------------
+HAL_SRCS := $(filter-out %_template.c, $(wildcard $(IOT)/Drivers/STM32H5xx_HAL_Driver/Src/*.c))
+
+# --- FreeRTOS sources --------------------------------------------------------
+FREERTOS_BASE := $(IOT)/Middlewares/Third_Party/FreeRTOS/Source
+FREERTOS_SRCS := \
+	$(FREERTOS_BASE)/tasks.c \
+	$(FREERTOS_BASE)/queue.c \
+	$(FREERTOS_BASE)/list.c \
+	$(FREERTOS_BASE)/timers.c \
+	$(FREERTOS_BASE)/event_groups.c \
+	$(FREERTOS_BASE)/stream_buffer.c \
+	$(FREERTOS_BASE)/CMSIS_RTOS_V2/cmsis_os2.c \
+	$(FREERTOS_BASE)/portable/GCC/ARM_CM33_NTZ/non_secure/port.c \
+	$(FREERTOS_BASE)/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c \
+	$(FREERTOS_BASE)/portable/MemMang/heap_4.c
+
+# --- SEGGER RTT sources ------------------------------------------------------
+SEGGER_SRCS := \
+	$(IOT)/Drivers/segger/Src/SEGGER_RTT.c \
+	$(IOT)/Drivers/segger/Src/SEGGER_RTT_printf.c
+
+# --- Startup assembly --------------------------------------------------------
+ASM_SRCS := $(IOT)/Core/Startup/startup_stm32h573ritx.s
+
+# --- All objects -------------------------------------------------------------
+ALL_C_SRCS := $(APP_SRCS) $(PLATFORM_SRCS) $(CORE_SRCS) $(HAL_SRCS) $(FREERTOS_SRCS) $(SEGGER_SRCS)
+C_OBJS     := $(patsubst %.c, $(BUILD)/%.o, $(ALL_C_SRCS))
+ASM_OBJS   := $(patsubst %.s, $(BUILD)/%.o, $(ASM_SRCS))
+ALL_OBJS   := $(C_OBJS) $(ASM_OBJS)
+
+# =============================================================================
+.PHONY: all clean
+
+all: $(TARGET_SREC)
+
+# Generate .srec from .elf
+$(TARGET_SREC): $(TARGET_ELF)
+	$(OBJCOPY) -O srec $< $@
+	@echo "Generated: $@"
+
+# Link
+$(TARGET_ELF): $(ALL_OBJS)
+	$(CC) $(ALL_OBJS) -o $@ $(LDFLAGS)
+	@echo "Built: $@"
+
+# Compile C
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Assemble startup file
+$(BUILD)/%.o: %.s
+	@mkdir -p $(dir $@)
+	$(CC) $(CPU_FLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(BUILD)
+	@echo "Cleaned IoT build directory"
