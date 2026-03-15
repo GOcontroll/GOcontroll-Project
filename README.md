@@ -5,10 +5,10 @@ Project to start developing your application on a Linux based GOcontroll Modulin
 It is advisable to clone or download our GOcontroll-Project as an example into your own repository or when you're working without software management, download into your local folder. GOcontroll-Project is just a template environment and **relies fully on the GOcontroll-CodeBase repository** which needs to be added as a submodule.
 
 ## Submodule
-Before start developing your application, the GOcontroll-CodeBase submodule needs to be cloned into your project folder.
+Before start developing your application, the GOcontroll-CodeBase submodule needs to be cloned into your project folder. Because our repository already has implemende GOcontroll-CodeBase, The submodule only has to be initially updated with command:  
+`git submodule update --init --recursive`
 
-### Add your submodule for the first time
-In the root of your repository, add the submodule for the first time.  
+When you build your own project from a clean repository, you first have to add the sub module with command:  
 `git submodule add https://github.com/GOcontroll/GOcontroll-CodeBase.git GOcontroll-CodeBase`
 
 The new folder structure should look like:
@@ -36,7 +36,7 @@ If you want to build one of the examples. (e.g. *led_blink.c*) execute the follo
 `make led_blink`  
 
 All make commands will result in an executable binary named *app* To run this binary simply execute the command:  
-`./build/app` 
+`./build/app.elf` 
 
 ## Build, deploy and run from a Windows host (building with VSC)
 Building from Windows is done using **WSL (Windows Subsystem for Linux)** combined with the **WSL** extension in Visual Studio Code. WSL provides a real Linux environment alongside Windows — without a virtual machine. All compilation runs inside WSL while you use VS Code normally in Windows.
