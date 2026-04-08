@@ -42,13 +42,15 @@ All make commands will result in an executable binary named *app* To run this bi
 Building from Windows is done using **WSL (Windows Subsystem for Linux)** combined with the **WSL** extension in Visual Studio Code. WSL provides a real Linux environment alongside Windows — without a virtual machine. All compilation runs inside WSL while you use VS Code normally in Windows.
 
 ### Step 1 — Install WSL
-Open PowerShell as Administrator and run:
+Open PowerShell as Administrator and run:  
 `wsl --install`
 
 This installs Ubuntu by default. Any Linux distribution (Ubuntu, Debian, etc.) will work as long as it supports `apt`.
 
-Restart your PC when prompted. On first launch, set a username and password for your WSL environment.
+Restart your PC when prompted. After reboot execute: `wsl` in your command promp, you will be asked to install a distribution. Example:   
+`wsl.exe --install debian`  
 
+On first launch, set a username and password for your WSL environment.
 
 After installation there are three ways to open WSL:
 - **Start menu** — search for *Ubuntu* and open it
@@ -75,7 +77,7 @@ Install the following extensions in VS Code on Windows. These are UI extensions 
 
 ### Step 4 — Open your project in WSL
 In VS Code, open the Command Palette (`Ctrl+Shift+P`) and select:
-`WSL: Open Folder in WSL`
+`WSL: Open Folder in WSL` In case no WSL option shows up, navigate to the Remote Explorer - Select WSL Targets -your distro- -> Connect in Current Window.
 
 Navigate to your project folder. VS Code will reopen connected to WSL — you will see **WSL: Debian** (or your distro) in the bottom-left corner.
 
