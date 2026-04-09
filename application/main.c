@@ -27,6 +27,11 @@
 #ifdef GOCONTROLL_LINUX
 
 #include <unistd.h>
+#include <signal.h>
+#include <time.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* Called on SIGTERM / SIGINT — turn off outputs and release the hardware. */
 static void app_terminate(void)
@@ -40,6 +45,12 @@ static void app_terminate(void)
 
 int main(void)
 {
+	sigset_t set;
+	timer_t timerid;
+	struct sigevent sev;
+	struct itimerspec its;
+	struct timespec timeout;
+
 	info("GOcontroll blink example starting\n");
 
 	GO_board_get_hardware_version();
@@ -50,6 +61,33 @@ int main(void)
 	uint8_t led_state = 0;
 	int     cycle     = 0;
 
+	/* Configure a signal to be sent every 10 ms to provide a constant heartbeat */
+	sev.sigev_notify = SIGEV_THREAD_ID;
+	sev.sigev_signo = SIGRTMIN;
+	sev._sigev_un._tid = gettid();
+
+	sigemptyset(&set);
+	sigaddset(&set, SIGRTMIN);
+	pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+	if (timer_create(CLOCK_REALTIME, &sev, &timerid)) {
+		err("Failed to create step timer! %d: %s", errno, strerror(errno));
+		exit(-1);
+	}
+
+	its.it_value.tv_sec = 0;
+	its.it_value.tv_nsec = 10000000; /* initial 10 ms delay */
+	its.it_interval.tv_sec = 0;
+	its.it_interval.tv_nsec = 10000000; /* then every 10 ms*/
+
+	timeout.tv_sec = 1; /* Set sigtimedwait() timeout to 1 second */
+	timeout.tv_nsec = 0;
+
+	if (timer_settime(timerid, 0, &its, NULL)) {
+		err("Failed to start step timer! %d: %s", errno, strerror(errno));
+		exit(-1);
+	}
+
 	while (1) {
 		if (++cycle >= 50) {          /* 50 × 10 ms = 500 ms */
 			cycle     = 0;
@@ -57,7 +95,10 @@ int main(void)
 			GO_board_status_leds_led_control(1, LED_COLOR_BLUE, led_state * 100);
 		}
 
-		usleep(10000);                /* 10 ms cycle */
+		if (sigtimedwait(&set, NULL, &timeout) < 0) {
+			err("Failed to wait for timer signal %d: %s", errno, strerror(errno));
+			exit(-1);
+		}
 	}
 
 	return 0;
